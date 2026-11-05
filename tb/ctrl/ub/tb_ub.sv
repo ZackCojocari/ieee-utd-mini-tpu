@@ -12,7 +12,7 @@
 //
 // Each test in the plan is a task below; the initial block runs them in order.
 // Bench rules: docs/verification.md, section 2.
-
+`timescale 1ns/1ns
 module tb_ub;
   import tb_pkg::*;
 
