@@ -50,4 +50,28 @@ module ub #(
   output logic [63:0]   rd_data
 );
 
+localparam int depth = 1 << AW;
+logic [63:0] mem [0:depth-1];
+logic [AW:0] wr_ptr = '0;
+
+always_ff@(posedge clk)begin
+  if(rst || wr_rst)begin
+    wr_ptr <= '0;
+  end
+  else if(wr_valid)begin
+    wr_ptr <= wr_ptr + 1;
+    mem[wr_ptr[AW-1:0]] <= wr_data;
+  end
+end
+
+logic [63:0] rd_lat;
+
+always_ff@(posedge clk)begin
+  rd_lat <= mem[rd_addr];
+  rd_data <= rd_lat;
+end
+
+
+
+
 endmodule

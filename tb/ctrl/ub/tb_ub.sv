@@ -30,6 +30,50 @@ module tb_ub;
   always #5 clk = ~clk;
 
   ub #(.AW(AW)) dut (.*);
+  
+  logic [63:0] expected_mem [0:8191];
+  logic [63:0] expected_rd_data [RD_LAT];
+  logic [AW-1:0] expected_rd_addr [RD_LAT];
+  bit rd_valid [RD_LAT];
+  int unsigned expected_wr_ptr;
+  
+
+  always_ff @(posedge clk) begin
+    if (rst || wr_rst) begin
+      expected_wr_ptr <= 0;
+    end else if (wr_valid) begin
+      if (expected_wr_ptr >= 8192) 
+        $fatal(1, "ub testbench: write beyond address 8191");
+      else begin 
+
+      expected_mem[expected_wr_ptr] <= wr_data;
+      expected_wr_ptr <= expected_wr_ptr +1;
+      end
+    end
+  end
+
+  always_ff @(posedge clk) begin
+    expected_rd_data[0] <= expected_mem[rd_addr];
+    expected_rd_addr[0] <= rd_addr;
+    rd_valid[0] <= !rst && (expected_wr_ptr > rd_addr);
+
+    for (int i = 1; i < RD_LAT; i++) begin
+      expected_rd_data[i] <= expected_rd_data[i-1];
+      expected_rd_addr[i] <= expected_rd_addr[i-1];
+      rd_valid[i] <= rd_valid[i-1];
+    end 
+  end
+
+  always @(negedge clk) begin
+    if (rd_valid[RD_LAT-1] && rd_data !== expected_rd_data[RD_LAT-1])
+      $fatal(1, "ub read at address %0d: got %h, expected %h",
+             expected_rd_addr[RD_LAT-1], rd_data, expected_rd_data[RD_LAT-1]);
+  end
+
+
+
+
+
 
   initial begin
     $display("SKIP: not implemented"); $finish;
